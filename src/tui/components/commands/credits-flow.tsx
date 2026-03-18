@@ -5,8 +5,9 @@ import { useConfig } from "../../context/config";
 import {
   getPensarApiUrl,
   getPensarConsoleUrl,
+  getPensarGatewayUrl,
 } from "../../../core/api/constants";
-import { ensureValidToken } from "../../../core/auth";
+import { ensureValidToken, selectWorkspace } from "../../../core/auth";
 import { config } from "../../../core/config";
 
 type CreditsStep = "loading" | "no-auth" | "display" | "browser-opened";
@@ -57,6 +58,13 @@ export default function CreditsFlow({ onOpenAuthDialog }: CreditsFlowProps) {
       pensarAPIKey: appConfig.data.pensarAPIKey,
     });
     if (!tokenResult) {
+      setError("Not connected. Run /auth to continue.");
+      setStep("no-auth");
+      return;
+    }
+
+    if (tokenResult.type === "workos" && !appConfig.data.workspaceId) {
+      setError("Workspace not selected. Run /auth to choose a workspace.");
       setStep("no-auth");
       return;
     }
@@ -66,6 +74,7 @@ export default function CreditsFlow({ onOpenAuthDialog }: CreditsFlowProps) {
 
     try {
       const apiUrl = getPensarApiUrl();
+      const gatewayBaseUrl = appConfig.data.gatewayUrl || getPensarGatewayUrl();
       const headers: Record<string, string> = {
         Authorization: `Bearer ${tokenResult.token}`,
       };
@@ -73,13 +82,58 @@ export default function CreditsFlow({ onOpenAuthDialog }: CreditsFlowProps) {
       if (tokenResult.type === "workos" && appConfig.data.workspaceId) {
         headers["X-Workspace-Id"] = appConfig.data.workspaceId;
       }
-      const response = await fetch(`${apiUrl}/gateway/validate`, {
+      const response = await fetch(`${gatewayBaseUrl}/gateway/validate`, {
         method: "GET",
         headers,
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch balance");
+        let message = "Failed to fetch balance";
+        try {
+          const body = (await response.json()) as {
+            error?: string;
+            message?: string;
+          };
+          message = body.error || body.message || message;
+        } catch {
+          // Fallback to generic message when response body is not JSON.
+        }
+
+        if (response.status === 401 || response.status === 403) {
+          setError("Session expired. Run /auth to reconnect.");
+          setStep("no-auth");
+          return;
+        }
+
+        // Some environments do not expose /gateway/validate. Fall back
+        // to the workspace billing confirmation endpoint used by /auth.
+        if (
+          response.status === 404 &&
+          tokenResult.type === "workos" &&
+          appConfig.data.workspaceId
+        ) {
+          const billing = await selectWorkspace(
+            apiUrl,
+            tokenResult.token,
+            appConfig.data.workspaceId,
+          );
+
+          if (billing.signingKey || billing.gatewayUrl) {
+            await config.update({
+              gatewaySigningKey: billing.signingKey ?? undefined,
+              gatewayUrl: billing.gatewayUrl ?? undefined,
+            });
+          }
+
+          setCredits({
+            balance: billing.billing.balance,
+            workspace: billing.workspace.name,
+          });
+          setStep("display");
+          return;
+        }
+
+        throw new Error(message);
       }
 
       const result = (await response.json()) as {
@@ -165,6 +219,11 @@ export default function CreditsFlow({ onOpenAuthDialog }: CreditsFlowProps) {
           <box>
             <text fg="yellow">Not connected to Pensar Console.</text>
           </box>
+          {error && (
+            <box>
+              <text fg="red">{error}</text>
+            </box>
+          )}
           <box>
             <text fg="gray">
               Run <span fg="green">/auth</span> first to connect your account.

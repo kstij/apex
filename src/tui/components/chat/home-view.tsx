@@ -20,6 +20,7 @@ import { PromptInput } from "../shared/prompt-input";
 import { useTheme } from "../../theme";
 import { slugify } from "../../../core/skills";
 import * as History from "../../../core/history";
+import { isConnected } from "../../../core/auth";
 
 type ViewType = "home" | "config" | "chat";
 
@@ -107,6 +108,15 @@ export function HomeView({ onNavigate, onStartSession }: HomeViewProps) {
     desc: s.description || "skill",
   }));
 
+  const connectedToPensar = isConnected({
+    accessToken: config.data.accessToken,
+    pensarAPIKey: config.data.pensarAPIKey,
+  });
+
+  const connectionLabel = connectedToPensar
+    ? `Connected${config.data.workspaceSlug ? ` (${config.data.workspaceSlug})` : ""}`
+    : "Not connected";
+
   // Calculate layout dimensions
   const animationHeight = Math.max(6, Math.floor(dimensions.height * 0.2));
   const inputWidth = Math.min(80, dimensions.width - 10);
@@ -125,6 +135,9 @@ export function HomeView({ onNavigate, onStartSession }: HomeViewProps) {
           <span fg={colors.textMuted}>({config.data.version || "local"})</span>
         </text>
         <text fg={colors.textMuted}>Automated offensive security</text>
+        <text fg={connectedToPensar ? colors.success : colors.warning}>
+          Pensar: {connectionLabel}
+        </text>
       </box>
 
       {/* Command Quick Reference */}

@@ -8,12 +8,14 @@ import {
 } from "./utils/command-flags";
 import { getAllThemeNames } from "./theme";
 import { config } from "../core/config";
+import { disconnect, isConnected } from "../core/auth";
 /**
  * Define your application's CommandContext type with specific methods
  */
 export interface AppCommandContext {
   route: Route;
   navigate: (route: Route) => void;
+  reloadConfig?: () => Promise<void>;
   openSessionsDialog?: () => void;
   openThemeDialog?: () => void;
   openAuthDialog?: () => void;
@@ -342,16 +344,64 @@ export const commands: CommandConfig[] = [
   },
   {
     name: "auth",
-    description: "Connect to Pensar Console for managed inference",
+    description: "Manage Pensar Console login",
     category: "General",
+    options: [
+      {
+        name: "login",
+        description: "Open the auth dialog",
+      },
+      {
+        name: "logout",
+        description: "Log out of Pensar Console",
+      },
+      {
+        name: "status",
+        description: "Open auth dialog only when disconnected",
+      },
+    ],
     handler: async (args, ctx) => {
+      const subcommand = args[0]?.toLowerCase();
+
+      if (subcommand === "logout") {
+        ctx.openAuthDialog?.();
+        return;
+      }
+
+      if (subcommand === "status") {
+        const appConfig = await config.get();
+        if (!isConnected(appConfig)) {
+          ctx.openAuthDialog?.();
+        }
+        return;
+      }
+
       ctx.openAuthDialog?.();
     },
   },
 
   {
+    name: "logout",
+    aliases: ["signout", "disconnect"],
+    description: "Log out of Pensar Console",
+    category: "General",
+    handler: async (_args, ctx) => {
+      const appConfig = await config.get();
+
+      if (isConnected(appConfig)) {
+        // Route through auth dialog so users can confirm with ENTER.
+        ctx.openAuthDialog?.();
+        return;
+      }
+
+      await disconnect();
+      await ctx.reloadConfig?.();
+    },
+  },
+
+  {
     name: "credits",
-    aliases: ["buy"],
+    aliases: ["buy", "creadits"],
     description: "Buy credits / check balance",
     category: "General",
     handler: async (args, ctx) => {

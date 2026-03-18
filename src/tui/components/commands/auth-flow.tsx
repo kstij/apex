@@ -354,15 +354,22 @@ export default function AuthFlow({ onClose }: AuthFlowProps) {
 
   const handleDisconnect = async () => {
     await disconnect();
-    appConfig.reload();
+    await appConfig.reload();
     setFlowInfo(null);
     setSelectedWorkspace(null);
     setBalance(null);
     setBillingUrl(null);
     setStep("start");
+    goHome();
   };
 
   const hasLowBalance = balance !== null && balance < 1;
+  const isConnectedLanding =
+    alreadyConnected &&
+    flowInfo === null &&
+    selectedWorkspace === null &&
+    balance === null &&
+    !billingUrl;
 
   const effectiveBillingUrl =
     billingUrl ||
@@ -441,6 +448,10 @@ export default function AuthFlow({ onClose }: AuthFlowProps) {
 
     if (step === "success") {
       if (key.name === "return") {
+        if (isConnectedLanding) {
+          handleDisconnect();
+          return;
+        }
         if (hasLowBalance || billingUrl) {
           openBillingPage();
         } else {
@@ -606,6 +617,14 @@ export default function AuthFlow({ onClose }: AuthFlowProps) {
             <box>
               <text fg={colors.success}>Connected to Pensar Console</text>
             </box>
+            {isConnectedLanding && (
+              <box>
+                <text fg={colors.text}>
+                  Press <span fg={colors.primary}>[ENTER]</span> to log out of
+                  Pensar Console.
+                </text>
+              </box>
+            )}
             {(selectedWorkspace || connectedWorkspace) && (
               <box flexDirection="column">
                 <text fg={colors.text}>
@@ -651,10 +670,19 @@ export default function AuthFlow({ onClose }: AuthFlowProps) {
             </box>
             <box marginTop={1}>
               <text fg={colors.textMuted}>
-                <span fg={colors.primary}>[ENTER]</span>{" "}
-                {hasLowBalance || billingUrl ? "Open billing" : "Done"} ·{" "}
-                <span fg={colors.error}>[D]</span> Disconnect ·{" "}
-                <span fg={colors.primary}>[ESC]</span> Back
+                {isConnectedLanding ? (
+                  <>
+                    <span fg={colors.primary}>[ENTER]</span> Log out ·{" "}
+                    <span fg={colors.primary}>[ESC]</span> Back
+                  </>
+                ) : (
+                  <>
+                    <span fg={colors.primary}>[ENTER]</span>{" "}
+                    {hasLowBalance || billingUrl ? "Open billing" : "Done"} ·{" "}
+                    <span fg={colors.error}>[D]</span> Disconnect ·{" "}
+                    <span fg={colors.primary}>[ESC]</span> Back
+                  </>
+                )}
               </text>
             </box>
           </box>

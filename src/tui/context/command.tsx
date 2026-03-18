@@ -15,6 +15,7 @@ import {
 } from "../command-registry";
 import type { AutocompleteOption } from "../components/shared/prompt-input";
 import { useRoute, type WebCommandOptions } from "./route";
+import { useConfig } from "./config";
 import { loadSkills, slugify, type Skill } from "../../core/skills";
 
 interface CommandContextValue {
@@ -59,12 +60,14 @@ export function CommandProvider({
   onOpenPentestDialog,
 }: CommandProviderProps) {
   const route = useRoute();
+  const appConfig = useConfig();
   const [skills, setSkills] = useState<Skill[]>([]);
 
   const ctx = useMemo(() => {
     const ctx: AppCommandContext = {
       route: route.data,
       navigate: route.navigate,
+      reloadConfig: appConfig.reload,
       openSessionsDialog: onOpenSessionsDialog,
       openThemeDialog: onOpenThemeDialog,
       openAuthDialog: onOpenAuthDialog,
@@ -73,6 +76,7 @@ export function CommandProvider({
     return ctx;
   }, [
     route,
+    appConfig,
     onOpenSessionsDialog,
     onOpenThemeDialog,
     onOpenAuthDialog,
