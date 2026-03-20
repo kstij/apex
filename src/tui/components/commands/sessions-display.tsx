@@ -118,11 +118,10 @@ export default function SessionsDisplay({ onClose }: SessionsDisplayProps) {
       return;
     }
 
-    // O - Open session in operator mode
+    // Ctrl+O - Open session in operator mode
     if (
+      key.ctrl &&
       (key.name === "o" || key.name === "O") &&
-      !key.ctrl &&
-      !key.meta &&
       visualOrderSessions.length > 0
     ) {
       const currentSelection = visualOrderSessions[selectedIndex];
@@ -161,8 +160,8 @@ export default function SessionsDisplay({ onClose }: SessionsDisplayProps) {
       return;
     }
 
-    // R - View report in dialog
-    if (key.name === "r" && visualOrderSessions.length > 0) {
+    // Ctrl+R - View report in dialog
+    if (key.ctrl && key.name === "r" && visualOrderSessions.length > 0) {
       const currentSelection = visualOrderSessions[selectedIndex];
       if (!currentSelection) return;
       if (!currentSelection.hasReport) {
@@ -343,8 +342,8 @@ export default function SessionsDisplay({ onClose }: SessionsDisplayProps) {
           <box flexDirection="row" gap={2}>
             <text fg={colors.textMuted}>
               <span fg={colors.primary}>[Enter]</span> Open ·{" "}
-              <span fg={colors.primary}>[O]</span> Operator ·{" "}
-              <span fg={colors.primary}>[R]</span> Report ·{" "}
+              <span fg={colors.primary}>[Ctrl+O]</span> Operator ·{" "}
+              <span fg={colors.primary}>[Ctrl+R]</span> Report ·{" "}
               <span fg={colors.primary}>[Ctrl+D]</span> Delete
             </text>
           </box>
