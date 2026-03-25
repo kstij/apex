@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { spawn } from "child_process";
 import { useKeyboard } from "@opentui/react";
 import { config } from "../../../core/config";
 import { useConfig } from "../../context/config";
@@ -88,11 +89,14 @@ export default function AuthFlow({ onClose, hideEsc }: AuthFlowProps) {
     try {
       const platform = process.platform;
       if (platform === "darwin") {
-        Bun.spawn(["open", url]);
+        spawn("open", [url], { detached: true, stdio: "ignore" }).unref();
       } else if (platform === "win32") {
-        Bun.spawn(["cmd", "/c", "start", url]);
+        spawn("cmd", ["/c", "start", "", url], {
+          detached: true,
+          stdio: "ignore",
+        }).unref();
       } else {
-        Bun.spawn(["xdg-open", url]);
+        spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref();
       }
     } catch {
       // Browser open failed — user will see the fallback URL

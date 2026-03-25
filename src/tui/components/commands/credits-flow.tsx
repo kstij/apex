@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { spawn } from "child_process";
 import { useKeyboard } from "@opentui/react";
 import { useRoute } from "../../context/route";
 import { getPensarConsoleUrl } from "../../../core/api/constants";
@@ -44,11 +45,14 @@ export default function CreditsFlow({
     try {
       const platform = process.platform;
       if (platform === "darwin") {
-        Bun.spawn(["open", url]);
+        spawn("open", [url], { detached: true, stdio: "ignore" }).unref();
       } else if (platform === "win32") {
-        Bun.spawn(["cmd", "/c", "start", url]);
+        spawn("cmd", ["/c", "start", "", url], {
+          detached: true,
+          stdio: "ignore",
+        }).unref();
       } else {
-        Bun.spawn(["xdg-open", url]);
+        spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref();
       }
     } catch {
       // Browser open failed — user will see the fallback URL

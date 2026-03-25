@@ -1,4 +1,5 @@
 import type { CliRenderer } from "@opentui/core";
+import { spawn } from "child_process";
 import { overlayThemeRef } from "./console-theme";
 
 /** Set up clipboard copying (OSC52 + native) and the notification overlay. */
@@ -7,18 +8,16 @@ export function createClipboardManager(renderer: CliRenderer) {
 
   const copyToClipboard = (text: string) => {
     renderer.copyToClipboardOSC52(text);
-    try {
-      const proc = Bun.spawn(
-        process.platform === "darwin"
-          ? ["pbcopy"]
-          : ["xclip", "-selection", "clipboard"],
-        { stdin: "pipe" },
-      );
-      proc.stdin.write(text);
-      proc.stdin.end();
-    } catch {
+    const command = process.platform === "darwin" ? "pbcopy" : "xclip";
+    const args = process.platform === "darwin" ? [] : ["-selection", "clipboard"];
+    const proc = spawn(command, args, {
+      stdio: ["pipe", "ignore", "ignore"],
+    });
+    proc.on("error", () => {
       // native clipboard command unavailable
-    }
+    });
+    proc.stdin?.write(text);
+    proc.stdin?.end();
     clipboardNotifExpiry = Date.now() + 2000;
     renderer.requestRender();
     setTimeout(() => renderer.requestRender(), 2010);

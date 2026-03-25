@@ -315,13 +315,6 @@ if (command === "version" || command === "--version" || command === "-v") {
   const { runDoctor } = await import("./core/doctor");
   await runDoctor();
 } else if (args.length === 0) {
-  if (process.env.PENSAR_NO_TUI === "1") {
-    console.error(
-      "TUI mode requires Bun. Install Bun (https://bun.sh) or use a standalone binary release for interactive mode.",
-    );
-    console.error("All other commands work with Node — run 'pensar --help'.");
-    process.exit(1);
-  }
   await import("./tui/index.tsx");
 } else {
   console.error(`Error: Unknown command '${command}'`);
