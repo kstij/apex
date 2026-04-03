@@ -3,7 +3,6 @@ import type { Route, WebCommandOptions } from "./context/route";
 import {
   parseWebFlags,
   hasEnoughFlagsToSkipWizard,
-  buildSwarmSessionConfig,
 } from "./utils/command-flags";
 import { getAllThemeNames } from "./theme";
 import { config } from "../core/config";
@@ -123,13 +122,28 @@ export const commands: CommandConfig[] = [
     handler: async (args, ctx) => {
       const flags = parseWebFlags(args);
 
-      // Pentest command always uses swarm mode
       if (flags.target && hasEnoughFlagsToSkipWizard(flags)) {
-        const params = buildSwarmSessionConfig(flags);
+        const skillArgs: Record<string, string> = {};
+        if (flags.target) skillArgs.target = flags.target;
+        if (flags.authUrl) skillArgs["auth-url"] = flags.authUrl;
+        if (flags.authUser) skillArgs["auth-user"] = flags.authUser;
+        if (flags.authPass) skillArgs["auth-pass"] = flags.authPass;
+        if (flags.authInstructions)
+          skillArgs["auth-instructions"] = flags.authInstructions;
+        if (flags.hosts?.length) skillArgs.hosts = flags.hosts.join(",");
+        if (flags.ports?.length)
+          skillArgs.ports = flags.ports.map(String).join(",");
+        if (flags.strict) skillArgs.strict = "true";
+
         ctx.navigate({
-          type: "pentest",
-          targets: params.targets,
-          sessionConfig: params.config,
+          type: "operator",
+          nonce: Date.now(),
+          initialConfig: {
+            requireApproval: false,
+            target: flags.target,
+            sandbox: true,
+          },
+          initialSkill: { slug: "pentest", args: skillArgs },
         });
         return;
       }
@@ -215,6 +229,14 @@ export const commands: CommandConfig[] = [
     },
   },
   {
+    name: "plan",
+    description: "Show current pentest plan",
+    category: "Pentesting",
+    handler: async () => {
+      // Handled by the operator dashboard — this is a no-op for routing
+    },
+  },
+  {
     name: "threat-model",
     aliases: ["tm"],
     description: "Generate application-centric threat model",
@@ -259,9 +281,9 @@ export const commands: CommandConfig[] = [
     },
   },
   {
-    name: "sessions",
-    aliases: ["s"],
-    description: "Browse previous sessions",
+    name: "resume",
+    aliases: ["sessions", "s"],
+    description: "Resume a previous session",
     category: "Pentesting",
     handler: async (_args, ctx) => {
       ctx.openSessionsDialog?.();
@@ -395,11 +417,9 @@ export const commands: CommandConfig[] = [
     handler: async (args, ctx) => {
       // This command is handled by the session view when in a session
       // From home, it does nothing - tools panel only works in session context
-      if (ctx.route.type !== "pentest") {
-        // Not in a session - command is a no-op
+      if (ctx.route.type !== "operator") {
         return;
       }
-      // The session view will detect this command via route options
     },
   },
 ];
