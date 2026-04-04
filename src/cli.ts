@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
 /**
  * Pensar - AI-Powered Penetration Testing CLI
@@ -16,6 +16,23 @@ import { AgentEventBus } from "./core/eventBus";
 const args = process.argv.slice(2);
 const command = args[0];
 const version = packageJson.version;
+
+function isTermuxEnvironment(): boolean {
+  const prefix = process.env["PREFIX"] ?? "";
+  return (
+    process.platform === "android" ||
+    prefix.includes("com.termux") ||
+    Boolean(process.env["TERMUX_VERSION"])
+  );
+}
+
+function isBunRuntime(): boolean {
+  return Boolean(process.versions?.bun);
+}
+
+if (isTermuxEnvironment() && !process.env["TERM"]) {
+  process.env["TERM"] = "xterm-256color";
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -322,6 +339,9 @@ if (command === "version" || command === "--version" || command === "-v") {
   const { runDoctor } = await import("./core/doctor");
   await runDoctor();
 } else if (args.length === 0) {
+  if (isTermuxEnvironment() && !isBunRuntime()) {
+    console.log("Running Apex TUI using Node compatibility mode (Termux detected)");
+  }
   await import("./tui/index.tsx");
 } else {
   console.error(`Error: Unknown command '${command}'`);

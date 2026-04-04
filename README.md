@@ -54,6 +54,25 @@ Open the Apex TUI:
 pensar
 ```
 
+## Termux (Android)
+
+Apex supports Termux using Node compatibility mode.
+
+1. Install Node.js in Termux.
+2. Install Apex globally:
+
+```bash
+npm install -g @pensar/apex
+```
+
+3. Launch Apex:
+
+```bash
+pensar
+```
+
+If your terminal type is not set, Apex will default to `xterm-256color` automatically in Termux.
+
 ## Kali Linux Container (Optional)
 
 For **best performance**, run Apex in the included Kali Linux container with preconfigured pentest tools:
