@@ -71,6 +71,18 @@ npm install -g @pensar/apex
 pensar
 ```
 
+Optional: add a one-word launcher alias:
+
+```bash
+echo 'alias pensar-phone="cd ~/apex && export TERM=${TERM:-xterm-256color} && node --import tsx src/cli.ts"' >> ~/.zshrc && source ~/.zshrc
+```
+
+Then run:
+
+```bash
+pensar-phone
+```
+
 If your terminal type is not set, Apex will default to `xterm-256color` automatically in Termux.
 
 ## Kali Linux Container (Optional)
