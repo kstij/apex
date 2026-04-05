@@ -12,23 +12,15 @@ import { getCurrentVersion, upgrade } from "./core/installation";
 import { buildAuthConfig } from "./core/ai/utils";
 import { resolvePentestMode } from "./core/cli/pentestMode";
 import { AgentEventBus } from "./core/eventBus";
+import {
+  canRunOpenTuiRuntime,
+  isBunRuntime,
+  isTermuxEnvironment,
+} from "./core/runtime";
 
 const args = process.argv.slice(2);
 const command = args[0];
 const version = packageJson.version;
-
-function isTermuxEnvironment(): boolean {
-  const prefix = process.env["PREFIX"] ?? "";
-  return (
-    process.platform === "android" ||
-    prefix.includes("com.termux") ||
-    Boolean(process.env["TERMUX_VERSION"])
-  );
-}
-
-function isBunRuntime(): boolean {
-  return Boolean(process.versions?.bun);
-}
 
 if (isTermuxEnvironment() && !process.env["TERM"]) {
   process.env["TERM"] = "xterm-256color";
@@ -342,7 +334,12 @@ if (command === "version" || command === "--version" || command === "-v") {
   if (isTermuxEnvironment() && !isBunRuntime()) {
     console.log("Running Apex TUI using Node compatibility mode (Termux detected)");
   }
-  await import("./tui/index.tsx");
+  if (canRunOpenTuiRuntime()) {
+    await import("./tui/index.tsx");
+  } else {
+    const { runTermuxFallbackTui } = await import("./tui/termux");
+    await runTermuxFallbackTui();
+  }
 } else {
   console.error(`Error: Unknown command '${command}'`);
   console.error();

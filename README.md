@@ -59,22 +59,26 @@ pensar
 Apex supports Termux using Node compatibility mode.
 
 1. Install Node.js in Termux.
-2. Install Apex globally:
+2. Clone Apex and install dependencies:
 
 ```bash
-npm install -g @pensar/apex
+git clone https://github.com/pensarai/apex.git
+cd apex
+npm install
 ```
 
 3. Launch Apex:
 
 ```bash
-pensar
+node --import tsx src/cli.ts
 ```
+
+If OpenTUI runtime support is unavailable in your Termux environment, Apex automatically launches a menu-based fallback TUI mode.
 
 Optional: add a one-word launcher alias:
 
 ```bash
-echo 'alias pensar-phone="cd ~/apex && export TERM=${TERM:-xterm-256color} && node --import tsx src/cli.ts"' >> ~/.zshrc && source ~/.zshrc
+echo 'alias pensar-phone="cd ~/apex && export TERM=${TERM:-xterm-256color} && node --import tsx src/cli.ts"' >> ~/.bashrc && source ~/.bashrc
 ```
 
 Then run:
